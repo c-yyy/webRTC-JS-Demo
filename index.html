@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRtc-Js-Demo</title>
+  <link rel="stylesheet" href="./main.css" />
+</head>
+<body>
+  <h1>WebRtc-Js-Demo -- by cy</h1>
+  <section class="section-1">
+    <video id="localVideo" autoplay playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+  </section>
+
+  <section class="section-1">
+    <button onclick="getLocalVideoStream()">本地</button>
+    <div class="line"></div>
+    <button onclick="p2pConnection()">连线</button>
+    <div class="line"></div>
+    <button class="hangUp" onclick="hangUp()">挂断</button>
+  </section>
+
+  <h5>日志输出</h5>
+  <div name="textarea" id="textarea" cols="100" rows="10"></div>
+
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="./main.js"></script>
+</body>
+</html>
