@@ -1,0 +1,24 @@
+{
+  "name": "webrtc-js-koa2",
+  "version": "1.0.0",
+  "description": "![webrtc-0](./images/webrtc-0.png) ![webrtc](./images/webrtc.png) ![webrtc-1](./images/webrtc-1.png) ![webrtc-2](./images/webrtc-2.png)",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/c-yyy/webRTC-JS-Demo.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/c-yyy/webRTC-JS-Demo/issues"
+  },
+  "homepage": "https://github.com/c-yyy/webRTC-JS-Demo#readme",
+  "dependencies": {
+    "koa": "^2.13.1",
+    "koa-static": "^5.0.0"
+  }
+}
