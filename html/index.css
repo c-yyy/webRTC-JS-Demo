@@ -10,7 +10,7 @@ video {
   width: 620px;
   background: #303133;
   margin: 2rem;
-  border-radius: 10px;
+  border-radius: 5px;
   /* filter: blur(4px) invert(1) opacity(1); */
   /* filter: hue-rotate(180deg) saturate(200%); */
 }
@@ -42,10 +42,10 @@ button:hover {
   background: #F56C6C;
 }
 #textarea {
-  width: 50vw;
+  width: 80vw;
   max-height: 20vh;
   overflow-y: auto;
   border: 1px solid #909399;
-  border-radius: 10px;
+  border-radius: 5px;
   padding: 0 1rem;
 }

@@ -19,6 +19,7 @@
   "homepage": "https://github.com/c-yyy/webRTC-JS-Demo#readme",
   "dependencies": {
     "koa": "^2.13.1",
+    "koa-router": "^10.0.0",
     "koa-static": "^5.0.0"
   }
 }

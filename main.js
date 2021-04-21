@@ -1,16 +1,32 @@
 const Koa = require('koa');
+const router = require('koa-router')();
 const fs = require('fs');
-const path = require('path');
-const serve = require('koa-static');
 const app = new Koa();
 
+// 错误捕获
 app.on('error', async err => {
   console.log('\x1b[91m', `server error:${err}`);
 })
 
-const main = serve(path.join(__dirname));
-app.use(main);
+// 静态服务
+router.get('/', async (ctx)=>{
+  ctx.response.type = 'html';
+  ctx.response.body = fs.createReadStream('./html/index.html');
+});
+router.get('/index.js', async (ctx)=>{
+  ctx.response.type = 'js';
+  ctx.response.body = fs.createReadStream('./html/index.js');
+});
+router.get('/index.css', async (ctx)=>{
+  ctx.response.type = 'css';
+  ctx.response.body = fs.createReadStream('./html/index.css');
+});
 
+// 启动路由
+app.use(router.routes());
+app.use(router.allowedMethods());
+
+// 启动服务
 app.listen(10086, () => {
-  console.log('\x1b[32m', `----  http://127.0.0.1:${10086}/html/index.html  ----`);
+  console.log('\x1b[32m', `----  http://127.0.0.1:${10086}  ----`);
 });
