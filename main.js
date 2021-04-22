@@ -13,6 +13,10 @@ router.get('/', async (ctx)=>{
   ctx.response.type = 'html';
   ctx.response.body = fs.createReadStream('./html/index.html');
 });
+router.get('/utils.js', async (ctx)=>{
+  ctx.response.type = 'js';
+  ctx.response.body = fs.createReadStream('./html/utils.js');
+});
 router.get('/index.js', async (ctx)=>{
   ctx.response.type = 'js';
   ctx.response.body = fs.createReadStream('./html/index.js');
@@ -27,6 +31,6 @@ app.use(router.routes());
 app.use(router.allowedMethods());
 
 // 启动服务
-app.listen(10086, () => {
-  console.log('\x1b[32m', `----  http://127.0.0.1:${10086}  ----`);
+app.listen(3478, () => {
+  console.log('\x1b[32m', `----  http://127.0.0.1:${3478}  ----`);
 });
