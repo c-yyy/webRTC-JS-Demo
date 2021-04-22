@@ -43,7 +43,7 @@ button:hover {
 }
 #textarea {
   width: 80vw;
-  max-height: 20vh;
+  max-height: 30vh;
   overflow-y: auto;
   border: 1px solid #909399;
   border-radius: 5px;

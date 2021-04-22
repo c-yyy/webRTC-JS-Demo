@@ -1,4 +1,9 @@
 'use strict'
+const socket = io.connect('ws://127.0.0.1:3478')
+socket.on('connect', () => {
+  console.log('connect')
+})
+socket.emit('create or join', '123')
 
 // 视频流配置
 const mediaStreamQuery = {
@@ -17,10 +22,34 @@ const mediaStreamQuery = {
   },
   audio: false
 }
+const configuration = {
+  iceServers: [
+    // {
+    //   'urls': 'stun:stun.l.google.com:19302'
+    // },
+    {
+      urls: 'stun:119.28.31.21:3478',
+    },
+    {
+      urls: 'turn:119.28.31.21:3478',
+      username: 'user123',
+      credential: 'pass123'
+    }
+  ],
+  iceTransportPolicy: 'relay', // 可选值 all or relay
+  iceCandidatePoolSize: 0
+}
 const offerOptions = {
   offerToReceiveAudio: 1,
   offerToReceiveVideo: 1
 }
+
+// 变量声明
+const localVideo = document.querySelector('#localVideo')
+const remoteVideo = document.querySelector('#remoteVideo')
+
+let localMediaStream, remoteMediaStream
+let localPeerConnection, remotePeerConnection
 
 init()
 
@@ -40,6 +69,12 @@ const getLocalVideoStream = async () => {
 // 连接远程
 const p2pConnection = async () => {
   try {
+    window.room = prompt('房间号：')
+    if (room !== '') {
+      inputLog('Message from client: Asking to join room ' + room)
+      socket.emit('create or join', room)
+    }
+
     const videoTracks = localMediaStream.getVideoTracks()
     const audioTracks = localMediaStream.getAudioTracks()
     if (videoTracks.length > 0) {
@@ -49,12 +84,11 @@ const p2pConnection = async () => {
       inputLog(`Using audio device: ${audioTracks[0].label}`)
     }
 
-    // NAT网络类型
-    localPeerConnection = new RTCPeerConnection()
+    localPeerConnection = new RTCPeerConnection(configuration)
     localPeerConnection.addEventListener('icecandidate', e => onIceCandidate(localPeerConnection, e))
     localPeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(localPeerConnection, e))
 
-    remotePeerConnection = new RTCPeerConnection()
+    remotePeerConnection = new RTCPeerConnection(configuration)
     remotePeerConnection.addEventListener('icecandidate', e => onIceCandidate(remotePeerConnection, e))
     remotePeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(remotePeerConnection, e))
     
@@ -106,7 +140,7 @@ async function onIceCandidate(pc, event) {
   } catch (error) {
     inputLog(`${getName(pc)} failed to add ICE Candidate: ${error.toString()}`, '#F56C6C')
   }
-  inputLog(`${getName(pc)} ICE candidate:\n${event.candidate ? event.candidate.candidate : '(null)'}`)
+  inputLog(`${getName(pc)} ICE candidate:\n${event.candidate ? event.candidate.candidate : 'Authentication failed ?'}`)
 }
 
 function onIceStateChange(pc, event) {
