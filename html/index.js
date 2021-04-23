@@ -97,7 +97,7 @@ const p2pConnection = async () => {
         stats.forEach(report => {
           if (report && report.type === 'candidate-pair') {
             rttDom[1].innerText = ((report.totalRoundTripTime / report.responsesReceived) * 1000).toFixed(2) + ' ms'
-            rttDom[2].innerText = (report.bytesSent / 1024 / 1024).toFixed(2) + ' / ' + (report.bytesReceived / 1024 / 1024).toFixed(2)
+            rttDom[2].innerText = (report.bytesSent / 1024 / 1024).toFixed(2) + ' | ' + (report.bytesReceived / 1024 / 1024).toFixed(2)
           } else if (report && report.type === 'remote-candidate') {
             rttDom[0].innerText = `remote ${report.ip} | ${report.protocol} | ${report.candidateType}`
           } else if (report && report.type === 'inbound-rtp') {

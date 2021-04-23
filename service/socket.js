@@ -8,6 +8,8 @@ const socketServer = (app) => {
     },
   })
   http.listen('3479', '127.0.0.1')
+  console.log('\x1b[32m', `----  ws://127.0.0.1:${3479}  ----`)
+
 
   const outputLog = (...args) => {
     io.emit(`Message from server >> ${args}`)
