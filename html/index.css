@@ -52,3 +52,9 @@ button:hover {
   border-radius: 5px;
   padding: 0 1rem;
 }
+#table {
+  width: 82vw;
+}
+td {
+  text-align: center;
+}

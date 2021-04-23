@@ -43,10 +43,12 @@ const offerOptions = {
   offerToReceiveAudio: 1,
   offerToReceiveVideo: 1
 }
+let timer
 
 // 变量声明
 const localVideo = document.querySelector('#localVideo')
 const remoteVideo = document.querySelector('#remoteVideo')
+const rttDom = document.querySelectorAll('td')
 
 let localMediaStream, remoteMediaStream
 let localPeerConnection, remotePeerConnection
@@ -62,6 +64,7 @@ const getLocalVideoStream = async () => {
     localMediaStream = mediaStream
 
     localPeerConnection = new RTCPeerConnection(configuration)
+
     localPeerConnection.addEventListener('icecandidate', e => onIceCandidate(localPeerConnection, e))
     localPeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(localPeerConnection, e))
 
@@ -89,6 +92,21 @@ const p2pConnection = async () => {
     }
 
     remotePeerConnection = new RTCPeerConnection(configuration)
+    timer = setInterval(() => {
+      remotePeerConnection.getStats(null).then(stats => {
+        stats.forEach(report => {
+          if (report && report.type === 'candidate-pair') {
+            rttDom[1].innerText = ((report.totalRoundTripTime / report.responsesReceived) * 1000).toFixed(2) + ' ms'
+            rttDom[2].innerText = (report.bytesSent / 1024 / 1024).toFixed(2) + ' / ' + (report.bytesReceived / 1024 / 1024).toFixed(2)
+          } else if (report && report.type === 'remote-candidate') {
+            rttDom[0].innerText = `remote ${report.ip} | ${report.protocol} | ${report.candidateType}`
+          } else if (report && report.type === 'inbound-rtp') {
+            rttDom[3].innerText = `${report.decoderImplementation} | ${report.framesPerSecond} | ${report.framesDropped} | ${(report.totalInterFrameDelay / report.framesReceived * 1000).toFixed(2)} ms`
+          }
+        })
+      })
+    }, 1e3)
+
     remotePeerConnection.addEventListener('icecandidate', e => onIceCandidate(remotePeerConnection, e))
     remotePeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(remotePeerConnection, e))
     
@@ -109,6 +127,7 @@ const p2pConnection = async () => {
 
 // 挂断
 const hangUp = () => {
+  clearInterval(timer)
   localPeerConnection.close()
   remotePeerConnection.close()
   localPeerConnection = null

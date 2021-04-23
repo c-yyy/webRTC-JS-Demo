@@ -23,7 +23,21 @@
     <button class="hangUp" onclick="hangUp()">挂断</button>
   </section>
 
-  <h5>日志输出</h5>
+  <h5>性能监控 & 日志输出</h5>
+  <table id="table" border="1" cellspacing="0">
+    <tr>
+      <th>ICE TURN or STUN</th>
+      <th>Ping</th>
+      <th>Sent | Received</th>
+      <th>FPS | 丢帧 | 延时</th>
+    </tr>
+    <tr>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  </table>
   <div name="textarea" id="textarea" cols="100" rows="10"></div>
 
   <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
