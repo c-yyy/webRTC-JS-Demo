@@ -1,6 +1,15 @@
 'use strict'
 const URL = 'ws://127.0.0.1:3479'
-const socket = io(URL, { autoConnect: true })
+const socket = io(URL, {
+  autoConnect: false,
+  reconnectionDelayMax: 10000,
+  auth: {
+    token: '123'
+  },
+  query: {
+    'my-key': 'my-value'
+  }
+})
 socket.onAny((event, ...args) => {
   inputLog(`[ ${event} ] ${args.toString().replace(',', ' : ')}`, '#AC40FF')
 })
@@ -58,6 +67,7 @@ init()
 // 获取本地视频流
 const getLocalVideoStream = async () => {
   try {
+    socket.connect()
     socket.emit('create room', 2021)
     const mediaStream = await navigator.mediaDevices.getUserMedia(mediaStreamQuery)
     localVideo.srcObject = mediaStream
@@ -118,7 +128,7 @@ const p2pConnection = async () => {
       const offer = await localPeerConnection.createOffer(offerOptions)
       await onCreateOfferSuccess(offer)
     } catch (error) {
-    inputLog(`Failed to create session description: ${error.toString()}`, '#F56C6C')
+    inputLog(`请先接通本地视频 Failed to create session description: ${error.toString()}`, '#F56C6C')
     }
   } catch (error) {
     inputLog('p2pConnection ' + error, '#F56C6C')
@@ -127,11 +137,18 @@ const p2pConnection = async () => {
 
 // 挂断
 const hangUp = () => {
-  clearInterval(timer)
-  localPeerConnection.close()
-  remotePeerConnection.close()
+  if (localPeerConnection && remotePeerConnection) {
+    localPeerConnection.close()
+    remotePeerConnection.close()
+  }
+  localVideo.srcObject = null
+  remoteVideo.srcObject = null
   localPeerConnection = null
   remotePeerConnection = null
+  setTimeout(() => {
+    socket.disconnect()
+    clearInterval(timer)
+  }, 0)
   inputLog('hangUp success ~', '#67C23A')
 }
 
@@ -208,7 +225,7 @@ async function onCreateOfferSuccess(desc) {
     })
     inputLog(`${getPcName(localPeerConnection)} setLocalDescription complete`, '#67C23A')
   } catch (error) {
-    inputLog(`Failed to set session description: ${error.toString()}`, '#F56C6C')
+    inputLog(`请先接通本地视频 Failed to set session description: ${error.toString()}`, '#F56C6C')
   }
 
   inputLog('remotePeerConnection setRemoteDescription start')
@@ -221,7 +238,7 @@ async function onCreateOfferSuccess(desc) {
         const answer = await remotePeerConnection.createAnswer()
         await onCreateAnswerSuccess(answer)
       } catch (error) {
-        inputLog(`Failed to create session description: ${error.toString()}`, '#F56C6C')
+        inputLog(`请先接通本地视频 Failed to create session description: ${error.toString()}`, '#F56C6C')
       }
     })
     inputLog(`${getPcName(remotePeerConnection)} setLocalDescription complete`, '#67C23A')

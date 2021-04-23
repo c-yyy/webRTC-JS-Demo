@@ -50,6 +50,12 @@ const socketServer = (app) => {
       outputLog('remote stream candidate', candidate)
     })
   })
+
+  io.sockets.on('disconnect', socket => {
+    console.log(socket, 'you have been disconnected')
+    socket.disconnect()
+    outputLog('you have been disconnected')
+  })
 }
 
 module.exports = socketServer
