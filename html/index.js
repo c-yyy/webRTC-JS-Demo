@@ -1,9 +1,9 @@
 'use strict'
-const socket = io.connect('ws://127.0.0.1:3478')
-socket.on('connect', () => {
-  console.log('connect')
+const URL = 'ws://127.0.0.1:3479'
+const socket = io(URL, { autoConnect: true })
+socket.onAny((event, ...args) => {
+  inputLog(`[ ${event} ] ${args.toString().replace(',', ' : ')}`, '#AC40FF')
 })
-socket.emit('create or join', '123')
 
 // 视频流配置
 const mediaStreamQuery = {
@@ -56,9 +56,16 @@ init()
 // 获取本地视频流
 const getLocalVideoStream = async () => {
   try {
+    socket.emit('create room', 2021)
     const mediaStream = await navigator.mediaDevices.getUserMedia(mediaStreamQuery)
     localVideo.srcObject = mediaStream
     localMediaStream = mediaStream
+
+    localPeerConnection = new RTCPeerConnection(configuration)
+    localPeerConnection.addEventListener('icecandidate', e => onIceCandidate(localPeerConnection, e))
+    localPeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(localPeerConnection, e))
+
+    localMediaStream.getTracks().forEach(track => localPeerConnection.addTrack(track, localMediaStream))
     inputLog('navigator.mediaDevices.getUserMedia success ~', '#67C23A')
   } catch (error) {
     // 错误日志
@@ -69,11 +76,8 @@ const getLocalVideoStream = async () => {
 // 连接远程
 const p2pConnection = async () => {
   try {
-    window.room = prompt('房间号：')
-    if (room !== '') {
-      inputLog('Message from client: Asking to join room ' + room)
-      socket.emit('create or join', room)
-    }
+    // 默认加入2021房间
+    socket.emit('join room', 2021)
 
     const videoTracks = localMediaStream.getVideoTracks()
     const audioTracks = localMediaStream.getAudioTracks()
@@ -84,17 +88,11 @@ const p2pConnection = async () => {
       inputLog(`Using audio device: ${audioTracks[0].label}`)
     }
 
-    localPeerConnection = new RTCPeerConnection(configuration)
-    localPeerConnection.addEventListener('icecandidate', e => onIceCandidate(localPeerConnection, e))
-    localPeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(localPeerConnection, e))
-
     remotePeerConnection = new RTCPeerConnection(configuration)
     remotePeerConnection.addEventListener('icecandidate', e => onIceCandidate(remotePeerConnection, e))
     remotePeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(remotePeerConnection, e))
     
     remotePeerConnection.addEventListener('track', gotRemoteStream)
-
-    localMediaStream.getTracks().forEach(track => localPeerConnection.addTrack(track, localMediaStream))
     inputLog('Added local stream to localPeerConnection')
 
     try {
@@ -125,8 +123,12 @@ function gotRemoteStream(e) {
   }
 }
 
-function getName(pc) {
+function getPcName(pc) {
   return (pc === localPeerConnection) ? 'localPeerConnection' : 'remotePeerConnection'
+}
+
+function getOtherPcName(pc) {
+  return (pc === localPeerConnection) ? 'remotePeerConnection' : 'localPeerConnection'
 }
 
 function getOtherPc(pc) {
@@ -135,17 +137,25 @@ function getOtherPc(pc) {
 
 async function onIceCandidate(pc, event) {
   try {
-    await (getOtherPc(pc).addIceCandidate(event.candidate))
-    inputLog(`${getName(pc)} addIceCandidate success`, '#67C23A')
+    if (getPcName(pc) === 'localPeerConnection') {
+      await socket.emit('local stream candidate', event.candidate)
+    } else {
+      await socket.emit('remote stream candidate', event.candidate)
+    }
+    await socket.on(`got ${getOtherPcName(pc)} candidate`, async candidate => {
+      await (getOtherPc(pc).addIceCandidate(candidate))
+    })
+    // await (getOtherPc(pc).addIceCandidate(event.candidate))
+    inputLog(`${getPcName(pc)} addIceCandidate success`, '#67C23A')
   } catch (error) {
-    inputLog(`${getName(pc)} failed to add ICE Candidate: ${error.toString()}`, '#F56C6C')
+    inputLog(`${getPcName(pc)} failed to add ICE Candidate: ${error.toString()}`, '#F56C6C')
   }
-  inputLog(`${getName(pc)} ICE candidate:\n${event.candidate ? event.candidate.candidate : 'Authentication failed ?'}`)
+  inputLog(`${getPcName(pc)} ICE candidate:\n${event.candidate ? event.candidate.candidate : 'Authentication failed ?'}`)
 }
 
 function onIceStateChange(pc, event) {
   if (pc) {
-    inputLog(`${getName(pc)} ICE state: ${pc.iceConnectionState}`)
+    inputLog(`${getPcName(pc)} ICE state: ${pc.iceConnectionState}`)
     inputLog('ICE state change event: ', event)
   }
 }
@@ -155,7 +165,7 @@ async function onCreateAnswerSuccess(desc) {
   inputLog('remotePeerConnection setLocalDescription start', '#67C23A')
   try {
     await remotePeerConnection.setLocalDescription(desc)
-    inputLog(`${getName(remotePeerConnection)} setLocalDescription complete`, '#67C23A')
+    inputLog(`${getPcName(remotePeerConnection)} setLocalDescription complete`, '#67C23A')
 
   } catch (error) {
     inputLog(`Failed to set session description: ${error.toString()}`, '#F56C6C')
@@ -163,7 +173,7 @@ async function onCreateAnswerSuccess(desc) {
   inputLog('localPeerConnection setRemoteDescription start', '#67C23A')
   try {
     await localPeerConnection.setRemoteDescription(desc)
-    inputLog(`${getName(localPeerConnection)} setLocalDescription complete`, '#67C23A')
+    inputLog(`${getPcName(localPeerConnection)} setLocalDescription complete`, '#67C23A')
   } catch (error) {
     inputLog(`Failed to set session description: ${error.toString()}`, '#F56C6C')
   }
@@ -173,25 +183,30 @@ async function onCreateOfferSuccess(desc) {
   inputLog(`Offer from localPeerConnection\n${desc.sdp}`)
   inputLog('localPeerConnection setLocalDescription start')
   try {
-    await localPeerConnection.setLocalDescription(desc)
-    inputLog(`${getName(localPeerConnection)} setLocalDescription complete`, '#67C23A')
+    await socket.emit('local stream desc', desc)
+    await socket.on(`got localPeerConnection desc`, async resDesc => {
+      await localPeerConnection.setLocalDescription(resDesc)
+    })
+    inputLog(`${getPcName(localPeerConnection)} setLocalDescription complete`, '#67C23A')
   } catch (error) {
     inputLog(`Failed to set session description: ${error.toString()}`, '#F56C6C')
   }
 
   inputLog('remotePeerConnection setRemoteDescription start')
   try {
-    await remotePeerConnection.setRemoteDescription(desc)
-    inputLog(`${getName(remotePeerConnection)} setLocalDescription complete`, '#67C23A')
+    await socket.emit('remote stream desc', desc)
+    await socket.on(`got remotePeerConnection desc`, async resDesc => {
+      await remotePeerConnection.setRemoteDescription(resDesc)
+      inputLog('remotePeerConnection createAnswer start')
+      try {
+        const answer = await remotePeerConnection.createAnswer()
+        await onCreateAnswerSuccess(answer)
+      } catch (error) {
+        inputLog(`Failed to create session description: ${error.toString()}`, '#F56C6C')
+      }
+    })
+    inputLog(`${getPcName(remotePeerConnection)} setLocalDescription complete`, '#67C23A')
   } catch (error) {
     inputLog(`Failed to set session description: ${error.toString()}`, '#F56C6C')
-  }
-
-  inputLog('remotePeerConnection createAnswer start')
-  try {
-    const answer = await remotePeerConnection.createAnswer()
-    await onCreateAnswerSuccess(answer)
-  } catch (error) {
-    inputLog(`Failed to create session description: ${error.toString()}`, '#F56C6C')
-  }
+  }  
 }

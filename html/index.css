@@ -32,6 +32,9 @@ button:hover {
   cursor: pointer;
   opacity: 0.8;
 }
+.p1 {
+  color: #909399;
+}
 .init-log {
   color: #67C23A;
 }
