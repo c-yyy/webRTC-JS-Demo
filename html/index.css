@@ -4,17 +4,24 @@ body {
   justify-content: center;
   align-items: center;
 }
-video {
-  max-width: 50%;
-  max-height: 50%;
-  width: 620px;
+#localVideo {
+  width: 80vw;
   background: #303133;
-  margin: 2rem;
   border-radius: 5px;
   /* filter: blur(4px) invert(1) opacity(1); */
   /* filter: hue-rotate(180deg) saturate(200%); */
 }
-section {
+#remoteVideo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30%;
+}
+.section-1 {
+  position: relative;
+  margin: 2rem;
+}
+.section-2 {
   display: flex;
   justify-content: center;
   align-items: center;

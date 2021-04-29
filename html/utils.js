@@ -31,12 +31,3 @@ const inputLog = (text, color = '#606266') => {
   }
   }, 0)
 }
-
-// 初始化
-const init = () => {
-  inputLog('init success ~', '#67C23A')
-  window.addEventListener('error', e => {
-    const error = e.error
-    inputLog(error.toString(), '#F56C6C')
-  })
-}

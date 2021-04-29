@@ -21,11 +21,13 @@ const socketServer = (app) => {
   
     socket.on('create room', async room => {
       await socket.join(room)
-      outputLog('create room', room)
+      await io.emit('wait join room', room)
+      outputLog('wait join room ' + room)
     })
 
     socket.on('join room', async room => {
       await socket.to(room)
+      await io.emit('joined room', room)
       roomNum = room
       outputLog('join room', room)
     })

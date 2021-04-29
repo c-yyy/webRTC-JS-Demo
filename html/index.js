@@ -4,7 +4,7 @@ const socket = io(URL, {
   autoConnect: false,
   reconnectionDelayMax: 10000,
   auth: {
-    token: '123'
+    token: '2021'
   },
   query: {
     'my-key': 'my-value'
@@ -53,6 +53,7 @@ const offerOptions = {
   offerToReceiveVideo: 1
 }
 let timer
+const isClinet = window.location.href.includes('clinet=')
 
 // 变量声明
 const localVideo = document.querySelector('#localVideo')
@@ -62,13 +63,33 @@ const rttDom = document.querySelectorAll('td')
 let localMediaStream, remoteMediaStream
 let localPeerConnection, remotePeerConnection
 
+
+// 初始化
+const init = async () => {
+  socket.connect()
+
+  inputLog('init success ~', '#67C23A')
+
+  window.addEventListener('error', e => {
+    const error = e.error
+    inputLog(error.toString(), '#F56C6C')
+  })
+  await socket.on(`wait join room`, async res => {
+    // 区分客户端
+    if (isClinet) {
+      alert('隔壁请求与你视频')
+      inputLog(`连接房间，开始视频`)        
+      p2pConnection()
+      socket.emit('join room', 2021)
+    }
+  })
+}
+
 init()
 
-// 获取本地视频流
-const getLocalVideoStream = async () => {
+// 连接远程
+const p2pConnection = async () => {
   try {
-    socket.connect()
-    socket.emit('create room', 2021)
     const mediaStream = await navigator.mediaDevices.getUserMedia(mediaStreamQuery)
     localVideo.srcObject = mediaStream
     localMediaStream = mediaStream
@@ -79,60 +100,60 @@ const getLocalVideoStream = async () => {
     localPeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(localPeerConnection, e))
 
     localMediaStream.getTracks().forEach(track => localPeerConnection.addTrack(track, localMediaStream))
+
+    if (!isClinet) {
+      socket.emit('create room', 2021)
+    }
     inputLog('navigator.mediaDevices.getUserMedia success ~', '#67C23A')
   } catch (error) {
     // 错误日志
     inputLog('getLocalVideoStream ' + error, '#F56C6C')
   }
-}
 
-// 连接远程
-const p2pConnection = async () => {
-  try {
-    // 默认加入2021房间
-    socket.emit('join room', 2021)
-
-    const videoTracks = localMediaStream.getVideoTracks()
-    const audioTracks = localMediaStream.getAudioTracks()
-    if (videoTracks.length > 0) {
-      inputLog(`Using video device: ${videoTracks[0].label}`)
-    }
-    if (audioTracks.length > 0) {
-      inputLog(`Using audio device: ${audioTracks[0].label}`)
-    }
-
-    remotePeerConnection = new RTCPeerConnection(configuration)
-    timer = setInterval(() => {
-      remotePeerConnection.getStats(null).then(stats => {
-        stats.forEach(report => {
-          if (report && report.type === 'candidate-pair') {
-            rttDom[1].innerText = ((report.totalRoundTripTime / report.responsesReceived) * 1000).toFixed(2) + ' ms'
-            rttDom[2].innerText = (report.bytesSent / 1024 / 1024).toFixed(2) + ' | ' + (report.bytesReceived / 1024 / 1024).toFixed(2)
-          } else if (report && report.type === 'remote-candidate') {
-            rttDom[0].innerText = `remote ${report.ip} | ${report.protocol} | ${report.candidateType}`
-          } else if (report && report.type === 'inbound-rtp') {
-            rttDom[3].innerText = `${report.decoderImplementation} | ${report.framesPerSecond} | ${report.framesDropped} | ${(report.totalInterFrameDelay / report.framesReceived * 1000).toFixed(2)} ms`
-          }
-        })
-      })
-    }, 1e3)
-
-    remotePeerConnection.addEventListener('icecandidate', e => onIceCandidate(remotePeerConnection, e))
-    remotePeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(remotePeerConnection, e))
-    
-    remotePeerConnection.addEventListener('track', gotRemoteStream)
-    inputLog('Added local stream to localPeerConnection')
-
+  await socket.on(`joined room`, async res => {
     try {
-      inputLog('localPeerConnection createOffer start')
-      const offer = await localPeerConnection.createOffer(offerOptions)
-      await onCreateOfferSuccess(offer)
+      const videoTracks = localMediaStream.getVideoTracks()
+      const audioTracks = localMediaStream.getAudioTracks()
+      if (videoTracks.length > 0) {
+        inputLog(`Using video device: ${videoTracks[0].label}`)
+      }
+      if (audioTracks.length > 0) {
+        inputLog(`Using audio device: ${audioTracks[0].label}`)
+      }
+  
+      remotePeerConnection = new RTCPeerConnection(configuration)
+      timer = setInterval(() => {
+        remotePeerConnection.getStats(null).then(stats => {
+          stats.forEach(report => {
+            if (report && report.type === 'candidate-pair') {
+              rttDom[1].innerText = ((report.totalRoundTripTime / report.responsesReceived) * 1000).toFixed(2) + ' ms'
+              rttDom[2].innerText = `${(report.bytesSent / 1024 / 1024).toFixed(2)} MB` + ' | ' + `${(report.bytesReceived / 1024 / 1024).toFixed(2)} MB`
+            } else if (report && report.type === 'remote-candidate') {
+              rttDom[0].innerText = `remote ${report.ip} | ${report.protocol} | ${report.candidateType}`
+            } else if (report && report.type === 'inbound-rtp') {
+              rttDom[3].innerText = `${report.decoderImplementation} | ${report.framesPerSecond} | ${report.framesDropped} | ${(report.totalInterFrameDelay / report.framesReceived * 1000).toFixed(2)} ms`
+            }
+          })
+        })
+      }, 1e3)
+  
+      remotePeerConnection.addEventListener('icecandidate', e => onIceCandidate(remotePeerConnection, e))
+      remotePeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(remotePeerConnection, e))
+      
+      remotePeerConnection.addEventListener('track', gotRemoteStream)
+      inputLog('Added local stream to localPeerConnection')
+  
+      try {
+        inputLog('localPeerConnection createOffer start')
+        const offer = await localPeerConnection.createOffer(offerOptions)
+        await onCreateOfferSuccess(offer)
+      } catch (error) {
+      inputLog(`请先接通本地视频 Failed to create session description: ${error.toString()}`, '#F56C6C')
+      }
     } catch (error) {
-    inputLog(`请先接通本地视频 Failed to create session description: ${error.toString()}`, '#F56C6C')
+      inputLog('p2pConnection ' + error, '#F56C6C')
     }
-  } catch (error) {
-    inputLog('p2pConnection ' + error, '#F56C6C')
-  }
+  })
 }
 
 // 挂断
