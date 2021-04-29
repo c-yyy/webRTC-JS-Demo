@@ -52,7 +52,7 @@ const offerOptions = {
   offerToReceiveAudio: 1,
   offerToReceiveVideo: 1
 }
-let timer
+let timer, sign
 const isClinet = window.location.href.includes('clinet=')
 
 // 变量声明
@@ -76,11 +76,14 @@ const init = async () => {
   })
   await socket.on(`wait join room`, async res => {
     // 区分客户端
-    if (isClinet) {
-      alert('隔壁请求与你视频')
-      inputLog(`连接房间，开始视频`)        
-      p2pConnection()
-      socket.emit('join room', 2021)
+    if (isClinet && !sign) {
+      sign = confirm('隔壁请求与你视频')
+      console.log(sign)
+      if (sign) {
+        inputLog(`连接房间，开始视频`)        
+        p2pConnection()
+        socket.emit('join room', 2021)
+      }
     }
   })
 }
@@ -101,7 +104,7 @@ const p2pConnection = async () => {
 
     localMediaStream.getTracks().forEach(track => localPeerConnection.addTrack(track, localMediaStream))
 
-    if (!isClinet) {
+    if (!sign) {
       socket.emit('create room', 2021)
     }
     inputLog('navigator.mediaDevices.getUserMedia success ~', '#67C23A')
