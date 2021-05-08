@@ -4,11 +4,11 @@ const socketServer = (app) => {
   const http = require('http').createServer(app)
   const io = require('socket.io')(http, {
     cors: {
-      origin: "http://127.0.0.1:3478",
+      origin: "*",
     },
   })
-  http.listen('3479', '127.0.0.1')
-  console.log('\x1b[32m', `----  ws://127.0.0.1:${3479}  ----`)
+  http.listen(3479)
+  console.log('\x1b[32m', `----  ws://192.168.1.111:${3479}  ----`)
 
 
   const outputLog = (...args) => {
@@ -17,7 +17,7 @@ const socketServer = (app) => {
 
   io.sockets.on('connection', socket => {
     let roomNum
-    console.log('\x1b[1m', '\x1b[30m', 'A user is connected')
+    console.log('\x1b[1m', '\x1b[30m', 'A user is connected !')
   
     socket.on('create room', async room => {
       await socket.join(room)
