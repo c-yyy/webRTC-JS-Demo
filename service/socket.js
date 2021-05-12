@@ -15,14 +15,16 @@ const socketServer = (app) => {
   }
 
   io.sockets.on('connection', socket => {
+    const USERCOUNT = 3;
+
     socket.on('message', (room, data)=>{
       socket.to(room).emit('message',room, data);
     });
   
     socket.on('join', (room)=>{
       socket.join(room);
-      var myRoom = io.sockets.adapter.rooms[room]; 
-      var users = (myRoom)? Object.keys(myRoom.sockets).length : 0;
+      const myRoom = io.sockets.adapter.rooms[room]; 
+      const users = (myRoom)? Object.keys(myRoom.sockets).length : 0;
       logger.debug('the user number of room is: ' + users);
   
       if(users < USERCOUNT){
@@ -41,8 +43,8 @@ const socketServer = (app) => {
     });
   
     socket.on('leave', (room)=>{
-      var myRoom = io.sockets.adapter.rooms[room]; 
-      var users = (myRoom)? Object.keys(myRoom.sockets).length : 0;
+      const myRoom = io.sockets.adapter.rooms[room]; 
+      const users = (myRoom)? Object.keys(myRoom.sockets).length : 0;
       logger.debug('the user number of room is: ' + (users-1));
       //socket.emit('leaved', room, socket.id);
       //socket.broadcast.emit('leaved', room, socket.id);
