@@ -1,12 +1,18 @@
 'use strict'
 
 const socketServer = (app) => {
-  const http = require('http').createServer(app)
+  const http = require('http').createServer(app, (req, res) => {
+    const headers = {};
+    headers["Access-Control-Allow-Origin"] = "*";
+    res.writeHead(200, headers);
+    res.end();
+  })
   const io = require('socket.io')(http, {
     cors: {
       origin: "*",
     },
   })
+  // io.set('origins', '*:*');
   http.listen(3479, '0.0.0.0')
   console.log('\x1b[32m', `----  ws://192.168.1.111:${3479}  ----`)
 
