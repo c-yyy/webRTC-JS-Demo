@@ -200,15 +200,7 @@ function getOtherPc(pc) {
 
 async function onIceCandidate(pc, event) {
   try {
-    if (getPcName(pc) === 'localPeerConnection') {
-      await socket.emit('local stream candidate', event.candidate)
-    } else {
-      await socket.emit('remote stream candidate', event.candidate)
-    }
-    await socket.on(`got ${getOtherPcName(pc)} candidate`, async candidate => {
-      await (getOtherPc(pc).addIceCandidate(candidate))
-    })
-    // await (getOtherPc(pc).addIceCandidate(event.candidate))
+    await (getOtherPc(pc).addIceCandidate(event.candidate))
     inputLog(`${getPcName(pc)} addIceCandidate success`, '#67C23A')
   } catch (error) {
     inputLog(`${getPcName(pc)} failed to add ICE Candidate: ${error.toString()}`, '#F56C6C')
@@ -246,10 +238,7 @@ async function onCreateOfferSuccess(desc) {
   inputLog(`Offer from localPeerConnection\n${desc.sdp}`)
   inputLog('localPeerConnection setLocalDescription start')
   try {
-    await socket.emit('local stream desc', desc)
-    await socket.on(`got localPeerConnection desc`, async resDesc => {
-      await localPeerConnection.setLocalDescription(resDesc)
-    })
+    await localPeerConnection.setLocalDescription(resDesc)
     inputLog(`${getPcName(localPeerConnection)} setLocalDescription complete`, '#67C23A')
   } catch (error) {
     inputLog(`请先接通本地视频 Failed to set session description: ${error.toString()}`, '#F56C6C')
@@ -257,17 +246,9 @@ async function onCreateOfferSuccess(desc) {
 
   inputLog('remotePeerConnection setRemoteDescription start')
   try {
-    await socket.emit('remote stream desc', desc)
-    await socket.on(`got remotePeerConnection desc`, async resDesc => {
-      await remotePeerConnection.setRemoteDescription(resDesc)
-      inputLog('remotePeerConnection createAnswer start')
-      try {
-        const answer = await remotePeerConnection.createAnswer()
-        await onCreateAnswerSuccess(answer)
-      } catch (error) {
-        inputLog(`请先接通本地视频 Failed to create session description: ${error.toString()}`, '#F56C6C')
-      }
-    })
+    await remotePeerConnection.setRemoteDescription(resDesc)
+    const answer = await remotePeerConnection.createAnswer()
+    await onCreateAnswerSuccess(answer)
     inputLog(`${getPcName(remotePeerConnection)} setLocalDescription complete`, '#67C23A')
   } catch (error) {
     inputLog(`Failed to set session description: ${error.toString()}`, '#F56C6C')
