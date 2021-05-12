@@ -7,48 +7,53 @@ const socketServer = (app) => {
       origin: "*",
     },
   })
-  http.listen(3479)
+  http.listen(3479, '0.0.0.0')
   console.log('\x1b[32m', `----  ws://192.168.1.111:${3479}  ----`)
-
 
   const outputLog = (...args) => {
     io.emit(`Message from server >> ${args}`)
   }
 
   io.sockets.on('connection', socket => {
-    let roomNum
-    console.log('\x1b[1m', '\x1b[30m', 'A user is connected !')
+    let roomLen = 0
+    console.log(new Date().toString(), '「 A user is connected! 」')
   
     socket.on('create room', async room => {
+      ++roomLen
       await socket.join(room)
       await io.emit('wait join room', room)
       outputLog('wait join room ' + room)
     })
 
     socket.on('join room', async room => {
-      await socket.to(room)
-      await io.emit('joined room', room)
-      roomNum = room
-      outputLog('join room', room)
+      ++roomLen
+      if (roomLen > 2) {
+        await io.emit('full')
+      } else {
+        await io.to(room).emit('joined room', room)
+        // await io.emit('joined room', room)
+        outputLog('join room', room)
+      }
+      console.log('roomLen', roomLen)
     })
 
     socket.on('local stream desc', async desc => {
-      socket.emit('got localPeerConnection desc', desc)
+      await io.emit('got localPeerConnection desc', desc)
       outputLog('local stream desc', desc)
     })
 
     socket.on('remote stream desc', async desc => {
-      socket.emit('got remotePeerConnection desc', desc)
+      await io.emit('got remotePeerConnection desc', desc)
       outputLog('remote stream desc', desc)
     })
 
     socket.on('local stream candidate', async candidate => {
-      socket.emit('got remotePeerConnection candidate', candidate)
+      await io.emit('got remotePeerConnection candidate', candidate)
       outputLog('local stream candidate', candidate)
     })
 
     socket.on('remote stream candidate', async candidate => {
-      socket.emit('got localPeerConnection candidate', candidate)
+      await io.emit('got localPeerConnection candidate', candidate)
       outputLog('remote stream candidate', candidate)
     })
   })

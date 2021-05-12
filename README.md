@@ -7,4 +7,5 @@
 # 展示
 ![webrtc-0](./images/webrtc-0.png)
 ![webrtc-imooc](./images/webrtc-imooc.png)
+![webrtc-imooc](./images/offer&answer.png)
 ![webrtc](./images/webrtc.png)
