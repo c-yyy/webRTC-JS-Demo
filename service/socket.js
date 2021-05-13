@@ -21,7 +21,7 @@ const socketServer = (app) => {
   }
 
   io.sockets.on('connection', socket => {
-    const USERCOUNT = 3;
+    const USERCOUNT = 2;
 
     socket.on('message', (room, data)=>{
       socket.to(room).emit('message',room, data);
@@ -35,16 +35,16 @@ const socketServer = (app) => {
       console.debug('the user number of room is: ' + users);
   
       if(users < USERCOUNT){
-        socket.emit('joined', room, socket.id); //发给除自己之外的房间内的所有人
+        io.emit('joined', room, socket.id); //发给除自己之外的房间内的所有人
         console.log('joined')
-        if(users > 1){
-          console.log('otherjoin')
-          socket.to(room).emit('otherjoin', room, socket.id);
+        if(users === 1) {
+          console.log('wait join')
+          socket.to(room)
+          io.emit('wait join', room, socket.id);
         }
-      
       }else{
         socket.leave(room);	
-        socket.emit('full', room, socket.id);
+        io.emit('full', room, socket.id);
       }
       //socket.emit('joined', room, socket.id); //发给自己
       //socket.broadcast.emit('joined', room, socket.id); //发给除自己之外的这个节点上的所有人
@@ -57,8 +57,9 @@ const socketServer = (app) => {
       console.debug('the user number of room is: ' + (users-1));
       //socket.emit('leaved', room, socket.id);
       //socket.broadcast.emit('leaved', room, socket.id);
-      socket.to(room).emit('bye', room, socket.id);
-      socket.emit('leaved', room, socket.id);
+      socket.to(room)
+      io.emit('bye', room, socket.id);
+      io.emit('leaved', room, socket.id);
       console.debug('leaved', room, socket.id)
       //io.in(room).emit('leaved', room, socket.id);
     });

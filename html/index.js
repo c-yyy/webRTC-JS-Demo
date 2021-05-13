@@ -72,6 +72,7 @@ const p2pConnection = async () => {
     localPeerConnection.addEventListener('icecandidate', e => onIceCandidate(localPeerConnection, e))
     localPeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(localPeerConnection, e))
 
+    // localPeerConnection.addStream(localMediaStream)
     localMediaStream.getTracks().forEach(track => localPeerConnection.addTrack(track, localMediaStream))
 
     if (!sign) {
@@ -117,6 +118,7 @@ const p2pConnection = async () => {
       remotePeerConnection.addEventListener('icecandidate', e => onIceCandidate(remotePeerConnection, e))
       remotePeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(remotePeerConnection, e))
       
+      // remotePeerConnection.addEventListener('onaddstream', gotRemoteStream)
       remotePeerConnection.addEventListener('track', gotRemoteStream)
       inputLog('Added local stream to localPeerConnection')
   
@@ -144,15 +146,15 @@ const init = async () => {
     inputLog(error.toString(), '#F56C6C')
   })
   // 区分客户端
-  if (isClinet && !sign) {
-    sign = confirm('隔壁请求与你视频')
-    console.log(sign)
-    if (sign) {
-      inputLog(`连接房间，开始视频`)        
-      p2pConnection()
-      socket.emit('join', 2021)
-    }
-  }
+  // if (isClinet && !sign) {
+  //   sign = confirm('隔壁请求与你视频')
+  //   console.log(sign)
+  //   if (sign) {
+  //     inputLog(`连接房间，开始视频`)        
+  //     p2pConnection()
+  //     socket.emit('join', 2021)
+  //   }
+  // }
 }
 
 init()
@@ -196,7 +198,7 @@ function getOtherPc(pc) {
 
 async function onIceCandidate(pc, event) {
   try {
-    await (getOtherPc(pc).addIceCandidate(event.candidate))
+    await getOtherPc(pc).addIceCandidate(event.candidate)
     inputLog(`${getPcName(pc)} addIceCandidate success`, '#67C23A')
   } catch (error) {
     inputLog(`${getPcName(pc)} failed to add ICE Candidate: ${error.toString()}`, '#F56C6C')
