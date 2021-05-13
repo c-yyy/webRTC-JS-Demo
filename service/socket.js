@@ -30,7 +30,7 @@ const socketServer = (app) => {
     socket.on('join', (room)=>{
       console.log('join ---', room)
       socket.join(room);
-      const myRoom = io.sockets.adapter.rooms.get(room); 
+      const myRoom = io.sockets.adapter.rooms.get(room);
       const users = myRoom? myRoom.size : 0;
       console.debug('the user number of room is: ' + users);
   
@@ -52,13 +52,14 @@ const socketServer = (app) => {
     });
   
     socket.on('leave', (room)=>{
-      const myRoom = io.sockets.adapter.rooms[room]; 
-      const users = (myRoom)? Object.keys(myRoom.sockets).length : 0;
+      const myRoom = io.sockets.adapter.rooms.get(room);
+      const users = myRoom? myRoom.size : 0;
       console.debug('the user number of room is: ' + (users-1));
       //socket.emit('leaved', room, socket.id);
       //socket.broadcast.emit('leaved', room, socket.id);
       socket.to(room).emit('bye', room, socket.id);
       socket.emit('leaved', room, socket.id);
+      console.debug('leaved', room, socket.id)
       //io.in(room).emit('leaved', room, socket.id);
     });
   })

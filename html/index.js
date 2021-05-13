@@ -168,7 +168,7 @@ const hangUp = () => {
   localPeerConnection = null
   remotePeerConnection = null
   setTimeout(() => {
-    socket.emit('leave')
+    socket.emit('leave', 2021)
     socket.disconnect()
     clearInterval(timer)
   }, 0)
