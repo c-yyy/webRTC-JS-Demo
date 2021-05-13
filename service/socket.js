@@ -28,14 +28,17 @@ const socketServer = (app) => {
     });
   
     socket.on('join', (room)=>{
+      console.log('join ---', room)
       socket.join(room);
-      const myRoom = io.sockets.adapter.rooms[room]; 
-      const users = (myRoom)? Object.keys(myRoom.sockets).length : 0;
-      logger.debug('the user number of room is: ' + users);
+      const myRoom = io.sockets.adapter.rooms.get(room); 
+      const users = myRoom? myRoom.size : 0;
+      console.debug('the user number of room is: ' + users);
   
       if(users < USERCOUNT){
         socket.emit('joined', room, socket.id); //发给除自己之外的房间内的所有人
+        console.log('joined')
         if(users > 1){
+          console.log('otherjoin')
           socket.to(room).emit('otherjoin', room, socket.id);
         }
       
@@ -51,7 +54,7 @@ const socketServer = (app) => {
     socket.on('leave', (room)=>{
       const myRoom = io.sockets.adapter.rooms[room]; 
       const users = (myRoom)? Object.keys(myRoom.sockets).length : 0;
-      logger.debug('the user number of room is: ' + (users-1));
+      console.debug('the user number of room is: ' + (users-1));
       //socket.emit('leaved', room, socket.id);
       //socket.broadcast.emit('leaved', room, socket.id);
       socket.to(room).emit('bye', room, socket.id);

@@ -5,7 +5,7 @@ body {
   align-items: center;
 }
 #localVideo {
-  width: 80vw;
+  max-width: 30vw;
   background: #303133;
   border-radius: 5px;
   /* filter: blur(4px) invert(1) opacity(1); */

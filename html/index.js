@@ -32,21 +32,18 @@ const mediaStreamQuery = {
   audio: false
 }
 const configuration = {
-  iceServers: [
-    // {
-    //   'urls': 'stun:stun.l.google.com:19302'
-    // },
-    {
-      urls: 'stun:119.28.31.21:3478',
-    },
-    {
-      urls: 'turn:119.28.31.21:3478',
-      username: 'user123',
-      credential: 'pass123'
-    }
-  ],
-  iceTransportPolicy: 'relay', // 可选值 all or relay
-  iceCandidatePoolSize: 0
+  // iceServers: [
+  //   {
+  //     urls: 'stun:119.28.31.21:3478',
+  //   },
+  //   {
+  //     urls: 'turn:119.28.31.21:3478',
+  //     username: 'user123',
+  //     credential: 'pass123'
+  //   }
+  // ],
+  // iceTransportPolicy: 'relay', // 可选值 all or relay
+  // iceCandidatePoolSize: 0
 }
 const offerOptions = {
   offerToReceiveAudio: 1,
@@ -63,33 +60,6 @@ const rttDom = document.querySelectorAll('td')
 let localMediaStream, remoteMediaStream
 let localPeerConnection, remotePeerConnection
 
-
-// 初始化
-const init = async () => {
-  socket.connect()
-
-  inputLog('init success ~', '#67C23A')
-
-  window.addEventListener('error', e => {
-    const error = e.error
-    inputLog(error.toString(), '#F56C6C')
-  })
-  await socket.on(`wait join room`, async res => {
-    // 区分客户端
-    if (isClinet && !sign) {
-      sign = confirm('隔壁请求与你视频')
-      console.log(sign)
-      if (sign) {
-        inputLog(`连接房间，开始视频`)        
-        p2pConnection()
-        socket.emit('join room', 2021)
-      }
-    }
-  })
-}
-
-init()
-
 // 连接远程
 const p2pConnection = async () => {
   try {
@@ -105,9 +75,10 @@ const p2pConnection = async () => {
     localMediaStream.getTracks().forEach(track => localPeerConnection.addTrack(track, localMediaStream))
 
     if (!sign) {
-      window.open('http://127.0.0.1:3478/?clinet=2021')
+      // 本地测试
+      // window.open('http://127.0.0.1:3478/?clinet=2021')
       setTimeout(() => {
-        socket.emit('create room', 2021)
+        socket.emit('join', 2021)
       }, 1e3);
     }
     inputLog('navigator.mediaDevices.getUserMedia success ~', '#67C23A')
@@ -116,7 +87,7 @@ const p2pConnection = async () => {
     inputLog('getLocalVideoStream ' + error, '#F56C6C')
   }
 
-  await socket.on(`joined room`, async res => {
+  await socket.on(`joined`, async res => {
     try {
       const videoTracks = localMediaStream.getVideoTracks()
       const audioTracks = localMediaStream.getAudioTracks()
@@ -162,6 +133,30 @@ const p2pConnection = async () => {
   })
 }
 
+// 初始化
+const init = async () => {
+  socket.connect()
+
+  inputLog('init success ~', '#67C23A')
+
+  window.addEventListener('error', e => {
+    const error = e.error
+    inputLog(error.toString(), '#F56C6C')
+  })
+  // 区分客户端
+  if (isClinet && !sign) {
+    sign = confirm('隔壁请求与你视频')
+    console.log(sign)
+    if (sign) {
+      inputLog(`连接房间，开始视频`)        
+      p2pConnection()
+      socket.emit('join', 2021)
+    }
+  }
+}
+
+init()
+
 // 挂断
 const hangUp = () => {
   if (localPeerConnection && remotePeerConnection) {
@@ -173,6 +168,7 @@ const hangUp = () => {
   localPeerConnection = null
   remotePeerConnection = null
   setTimeout(() => {
+    socket.emit('leave')
     socket.disconnect()
     clearInterval(timer)
   }, 0)
@@ -238,7 +234,7 @@ async function onCreateOfferSuccess(desc) {
   inputLog(`Offer from localPeerConnection\n${desc.sdp}`)
   inputLog('localPeerConnection setLocalDescription start')
   try {
-    await localPeerConnection.setLocalDescription(resDesc)
+    await localPeerConnection.setLocalDescription(desc)
     inputLog(`${getPcName(localPeerConnection)} setLocalDescription complete`, '#67C23A')
   } catch (error) {
     inputLog(`请先接通本地视频 Failed to set session description: ${error.toString()}`, '#F56C6C')
@@ -246,7 +242,7 @@ async function onCreateOfferSuccess(desc) {
 
   inputLog('remotePeerConnection setRemoteDescription start')
   try {
-    await remotePeerConnection.setRemoteDescription(resDesc)
+    await remotePeerConnection.setRemoteDescription(desc)
     const answer = await remotePeerConnection.createAnswer()
     await onCreateAnswerSuccess(answer)
     inputLog(`${getPcName(remotePeerConnection)} setLocalDescription complete`, '#67C23A')
