@@ -1,20 +1,18 @@
 'use strict'
 
 const socketServer = (app) => {
-  const http = require('http').createServer(app, (req, res) => {
-    const headers = {};
-    headers["Access-Control-Allow-Origin"] = "*";
-    res.writeHead(200, headers);
-    res.end();
-  })
+  const http = require('http').createServer()
   const io = require('socket.io')(http, {
-    cors: {
-      origin: "*",
-    },
+    // cors: {
+    //   origin: "*",
+    //   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    //   allowedHeaders: ["accept", "authorization", "cache-control", "content-type", "dnt", "if-modified-since", "keep-alive", "origin", "user-agent", "x-requested-with", "token", "x-access-token"],
+    //   credentials: true
+    // },
   })
-  // io.set('origins', '*:*');
-  http.listen(3479, '0.0.0.0')
-  console.log('\x1b[32m', `----  ws://192.168.1.111:${3479}  ----`)
+  http.listen(3479)
+  // http.listen(3479, '0.0.0.0')
+  console.log('\x1b[32m', `----  http://192.168.1.111:${3479}  ----`)
 
   const outputLog = (...args) => {
     io.emit(`Message from server >> ${args}`)
@@ -24,7 +22,8 @@ const socketServer = (app) => {
     const USERCOUNT = 2;
 
     socket.on('message', (room, data)=>{
-      socket.to(room).emit('message',room, data);
+      socket.to(room)
+      io.emit('message',room, data);
     });
   
     socket.on('join', (room)=>{

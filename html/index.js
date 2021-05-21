@@ -1,5 +1,6 @@
 'use strict'
-const URL = 'ws://127.0.0.1:3479'
+// const URL = 'http://192.168.1.111:3479'
+const URL = 'http://192.168.1.111:8779'
 const socket = io(URL, {
   autoConnect: false,
   reconnectionDelayMax: 10000,
@@ -72,8 +73,8 @@ const p2pConnection = async () => {
     localPeerConnection.addEventListener('icecandidate', e => onIceCandidate(localPeerConnection, e))
     localPeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(localPeerConnection, e))
 
-    // localPeerConnection.addStream(localMediaStream)
-    localMediaStream.getTracks().forEach(track => localPeerConnection.addTrack(track, localMediaStream))
+    localPeerConnection.addStream(localMediaStream)
+    // localMediaStream.getTracks().forEach(track => localPeerConnection.addTrack(track, localMediaStream))
 
     if (!sign) {
       // 本地测试
@@ -133,6 +134,42 @@ const p2pConnection = async () => {
       inputLog('p2pConnection ' + error, '#F56C6C')
     }
   })
+
+  await socket.on('message', (roomid, data) => {
+		console.log('receive message!', roomid, data);
+
+		if (data === null || data === undefined){
+			console.error('the message is invalid!');
+			return;	
+		}
+
+		if (data.hasOwnProperty('type') && data.type === 'offer') {
+      console.log('offer', data)
+			// pc.setRemoteDescription(new RTCSessionDescription(data));
+			// //create answer
+			// pc.createAnswer()
+			// 	.then(getAnswer)
+			// 	.catch(handleAnswerError);
+
+		} else if (data.hasOwnProperty('type') && data.type == 'answer'){
+      console.log('answer', data)
+
+			// answer.value = data.sdp;
+			// pc.setRemoteDescription(new RTCSessionDescription(data));
+		
+		} else if  (data.hasOwnProperty('type') && data.type === 'candidate'){
+      console.log('candidate', data)
+
+			// const candidate = new RTCIceCandidate({
+			// 	sdpMLineIndex: data.label,
+			// 	candidate: data.candidate
+			// });
+			// pc.addIceCandidate(candidate);
+		
+		} else {
+			console.log('the message is invalid!', data);
+		}
+	})
 }
 
 // 初始化
@@ -198,8 +235,17 @@ function getOtherPc(pc) {
 
 async function onIceCandidate(pc, event) {
   try {
-    await getOtherPc(pc).addIceCandidate(event.candidate)
-    inputLog(`${getPcName(pc)} addIceCandidate success`, '#67C23A')
+    if (event.candidate) {
+      await getOtherPc(pc).addIceCandidate(event.candidate)
+      inputLog(`${getPcName(pc)} addIceCandidate success`, '#67C23A')
+
+      socket.emit('message', 2021, {
+        type: 'candidate',
+        label:event.candidate.sdpMLineIndex, 
+        id:event.candidate.sdpMid, 
+        candidate: event.candidate.candidate
+      });
+    }
   } catch (error) {
     inputLog(`${getPcName(pc)} failed to add ICE Candidate: ${error.toString()}`, '#F56C6C')
   }
@@ -220,6 +266,7 @@ async function onCreateAnswerSuccess(desc) {
     await remotePeerConnection.setLocalDescription(desc)
     inputLog(`${getPcName(remotePeerConnection)} setLocalDescription complete`, '#67C23A')
 
+    socket.emit('message', 2021, desc);
   } catch (error) {
     inputLog(`Failed to set session description: ${error.toString()}`, '#F56C6C')
   }
@@ -238,6 +285,8 @@ async function onCreateOfferSuccess(desc) {
   try {
     await localPeerConnection.setLocalDescription(desc)
     inputLog(`${getPcName(localPeerConnection)} setLocalDescription complete`, '#67C23A')
+
+    socket.emit('message', 2021, desc);
   } catch (error) {
     inputLog(`请先接通本地视频 Failed to set session description: ${error.toString()}`, '#F56C6C')
   }
