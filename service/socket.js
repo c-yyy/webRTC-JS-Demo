@@ -19,13 +19,14 @@ const socketServer = (app) => {
   }
 
   io.sockets.on('connection', socket => {
-    const USERCOUNT = 2;
+    const USERCOUNT = 3;
 
     socket.on('message', (room, data)=>{
       socket.to(room)
       io.emit('message',room, data);
     });
   
+    // 这里应该加锁
     socket.on('join', (room)=>{
       console.log('join ---', room)
       socket.join(room);
@@ -33,16 +34,17 @@ const socketServer = (app) => {
       const users = myRoom? myRoom.size : 0;
       console.debug('the user number of room is: ' + users);
   
+      // 控制房间人数 USERCOUNT
       if(users < USERCOUNT){
         io.emit('joined', room, socket.id); //发给除自己之外的房间内的所有人
-        console.log('joined')
+        console.log('joined', room, socket.id)
         if(users === 1) {
           console.log('wait join')
-          socket.to(room)
+          socket.to(room).emit('wait join', room, socket.id);
           io.emit('wait join', room, socket.id);
         }
       }else{
-        socket.leave(room);	
+        socket.leave(room).emit('full', room, socket.id);
         io.emit('full', room, socket.id);
       }
       //socket.emit('joined', room, socket.id); //发给自己
@@ -56,7 +58,7 @@ const socketServer = (app) => {
       console.debug('the user number of room is: ' + (users-1));
       //socket.emit('leaved', room, socket.id);
       //socket.broadcast.emit('leaved', room, socket.id);
-      socket.to(room)
+      socket.to(room).emit('bye', room, socket.id);
       io.emit('bye', room, socket.id);
       io.emit('leaved', room, socket.id);
       console.debug('leaved', room, socket.id)
