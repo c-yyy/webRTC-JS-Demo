@@ -75,13 +75,21 @@ const p2pConnection = async () => {
 
     localPeerConnection.addStream(localMediaStream)
     // localMediaStream.getTracks().forEach(track => localPeerConnection.addTrack(track, localMediaStream))
+    try {
+      inputLog('localPeerConnection createOffer start')
+      const offer = await localPeerConnection.createOffer(offerOptions)
+      localPeerConnection.setLocalDescription(offer)
+      socket.emit('message', 2021, offer);
+    } catch (error) {
+      inputLog(`请先接通本地视频 Failed to create session description: ${error.toString()}`, '#F56C6C')
+    }
 
     if (!sign) {
       // 本地测试
       // window.open('http://127.0.0.1:3478/?clinet=2021')
-      setTimeout(() => {
-        socket.emit('join', 2021)
-      }, 1e3);
+      // setTimeout(() => {
+      //   socket.emit('join', 2021)
+      // }, 1e3);
     }
     inputLog('navigator.mediaDevices.getUserMedia success ~', '#67C23A')
   } catch (error) {
@@ -128,14 +136,14 @@ const p2pConnection = async () => {
         const offer = await localPeerConnection.createOffer(offerOptions)
         await onCreateOfferSuccess(offer)
       } catch (error) {
-      inputLog(`请先接通本地视频 Failed to create session description: ${error.toString()}`, '#F56C6C')
+        inputLog(`请先接通本地视频 Failed to create session description: ${error.toString()}`, '#F56C6C')
       }
     } catch (error) {
       inputLog('p2pConnection ' + error, '#F56C6C')
     }
   })
 
-  await socket.on('message', (roomid, data) => {
+  await socket.on('message', async (roomid, data) => {
 		console.log('receive message!', roomid, data);
 
 		if (data === null || data === undefined){
@@ -145,26 +153,28 @@ const p2pConnection = async () => {
 
 		if (data.hasOwnProperty('type') && data.type === 'offer') {
       console.log('offer', data)
-			// pc.setRemoteDescription(new RTCSessionDescription(data));
-			// //create answer
-			// pc.createAnswer()
-			// 	.then(getAnswer)
-			// 	.catch(handleAnswerError);
+			remotePeerConnection.setRemoteDescription(new RTCSessionDescription(data));
+			//create answer
+      const answer = await remotePeerConnection.createAnswer()
+      remotePeerConnection.setLocalDescription(answer)
+
+			socket.emit('message', 2021, answer);
 
 		} else if (data.hasOwnProperty('type') && data.type == 'answer'){
       console.log('answer', data)
 
 			// answer.value = data.sdp;
-			// pc.setRemoteDescription(new RTCSessionDescription(data));
+			localPeerConnection.setRemoteDescription(new RTCSessionDescription(data));
 		
 		} else if  (data.hasOwnProperty('type') && data.type === 'candidate'){
       console.log('candidate', data)
 
-			// const candidate = new RTCIceCandidate({
-			// 	sdpMLineIndex: data.label,
-			// 	candidate: data.candidate
-			// });
-			// pc.addIceCandidate(candidate);
+			const candidate = new RTCIceCandidate({
+				sdpMLineIndex: data.label,
+				candidate: data.candidate
+			});
+			localPeerConnection.addIceCandidate(candidate);
+			remotePeerConnection.addIceCandidate(candidate);
 		
 		} else {
 			console.log('the message is invalid!', data);

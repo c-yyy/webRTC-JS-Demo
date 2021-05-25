@@ -40,11 +40,11 @@ const socketServer = (app) => {
         console.log('joined', room, socket.id)
         if(users === 1) {
           console.log('wait join')
-          socket.to(room).emit('wait join', room, socket.id);
+          socket.to(room);
           io.emit('wait join', room, socket.id);
         }
       }else{
-        socket.leave(room).emit('full', room, socket.id);
+        socket.leave(room);
         io.emit('full', room, socket.id);
       }
       //socket.emit('joined', room, socket.id); //发给自己
@@ -58,7 +58,7 @@ const socketServer = (app) => {
       console.debug('the user number of room is: ' + (users-1));
       //socket.emit('leaved', room, socket.id);
       //socket.broadcast.emit('leaved', room, socket.id);
-      socket.to(room).emit('bye', room, socket.id);
+      socket.to(room);
       io.emit('bye', room, socket.id);
       io.emit('leaved', room, socket.id);
       console.debug('leaved', room, socket.id)
