@@ -14,10 +14,6 @@ const socketServer = (app) => {
   // http.listen(3479, '0.0.0.0')
   console.log('\x1b[32m', `----  http://192.168.1.111:${3479}  ----`)
 
-  const outputLog = (...args) => {
-    io.emit(`Message from server >> ${args}`)
-  }
-
   io.sockets.on('connection', socket => {
     const USERCOUNT = 3;
 
@@ -69,7 +65,6 @@ const socketServer = (app) => {
   io.sockets.on('disconnect', socket => {
     console.log(socket, 'you have been disconnected')
     socket.disconnect()
-    outputLog('you have been disconnected')
   })
 }
 
