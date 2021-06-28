@@ -8,7 +8,7 @@ const socket = io(URL, {
     token: '2021'
   },
   query: {
-    'my-key': 'my-value'
+    'my-key2': 'my-value2'
   }
 })
 socket.onAny((event, ...args) => {
@@ -33,18 +33,18 @@ const mediaStreamQuery = {
   audio: false
 }
 const configuration = {
-  // iceServers: [
-  //   {
-  //     urls: 'stun:119.28.31.21:3478',
-  //   },
-  //   {
-  //     urls: 'turn:119.28.31.21:3478',
-  //     username: 'user123',
-  //     credential: 'pass123'
-  //   }
-  // ],
-  // iceTransportPolicy: 'relay', // 可选值 all or relay
-  // iceCandidatePoolSize: 0
+  iceServers: [
+    {
+      urls: 'stun:119.28.31.21:3478',
+    },
+    {
+      urls: 'turn:119.28.31.21:3478',
+      username: 'user123',
+      credential: 'pass123'
+    }
+  ],
+  iceTransportPolicy: 'relay', // 可选值 all or relay
+  iceCandidatePoolSize: 0
 }
 const offerOptions = {
   offerToReceiveAudio: 1,
@@ -187,6 +187,10 @@ const init = async () => {
   socket.connect()
 
   inputLog('init success ~', '#67C23A')
+
+  socket.emit('hi', 'hi 123')
+
+  inputLog('hi success ~', '#67C23A')
 
   window.addEventListener('error', e => {
     const error = e.error

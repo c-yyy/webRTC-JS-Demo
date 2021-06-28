@@ -3,12 +3,12 @@
 const socketServer = (app) => {
   const http = require('http').createServer()
   const io = require('socket.io')(http, {
-    // cors: {
-    //   origin: "*",
-    //   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    //   allowedHeaders: ["accept", "authorization", "cache-control", "content-type", "dnt", "if-modified-since", "keep-alive", "origin", "user-agent", "x-requested-with", "token", "x-access-token"],
-    //   credentials: true
-    // },
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["accept", "authorization", "cache-control", "content-type", "dnt", "if-modified-since", "keep-alive", "origin", "user-agent", "x-requested-with", "token", "x-access-token"],
+      credentials: true
+    },
   })
   http.listen(3479)
   // http.listen(3479, '0.0.0.0')
@@ -16,9 +16,13 @@ const socketServer = (app) => {
 
   io.sockets.on('connection', socket => {
     const USERCOUNT = 3;
+    socket.on('hi', (data) => {
+      console.log(data)
+    })
 
     socket.on('message', (room, data)=>{
-      socket.to(room)
+      console.log('message', room, data)
+      socket.to(room).emit('message',room, data);
       io.emit('message',room, data);
     });
   
@@ -36,11 +40,11 @@ const socketServer = (app) => {
         console.log('joined', room, socket.id)
         if(users === 1) {
           console.log('wait join')
-          socket.to(room);
+          socket.to(room).emit('wait join', room, socket.id);
           io.emit('wait join', room, socket.id);
         }
       }else{
-        socket.leave(room);
+        socket.leave(room).emit('full', room, socket.id);
         io.emit('full', room, socket.id);
       }
       //socket.emit('joined', room, socket.id); //发给自己
