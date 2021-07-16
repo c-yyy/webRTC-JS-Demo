@@ -14,6 +14,8 @@ const socketServer = (app) => {
   // http.listen(3479, '0.0.0.0')
   console.log('\x1b[32m', `----  http://192.168.1.111:${3479}  ----`)
 
+  let lawyerList = [{ lawyer: '张律师', uuid: '1234-4567'}, { lawyer: '刘律师', uuid: '8765-4321'}]
+
   io.sockets.on('connection', socket => {
     const USERCOUNT = 3;
     socket.on('hi', (data) => {
@@ -25,6 +27,23 @@ const socketServer = (app) => {
       socket.to(room).emit('message',room, data);
       io.emit('message',room, data);
     });
+
+    socket.on('setStatus', data => {
+      const { status, lawyer, uuid } = data
+      switch (status) {
+        case 'free':
+          lawyerList = lawyerList.findIndex(lawyer => lawyer.uuid === uuid) === -1 && lawyerList.push({ lawyer, uuid })
+          break;
+        case 'busy':
+          lawyerList.splice(lawyerList.findIndex(lawyer => lawyer.uuid === uuid), 1)
+          break;
+      }
+    })
+
+    socket.on('wantLawyerList', () => {
+      console.log('lawyerList', lawyerList)
+      io.emit('lawyerList', lawyerList)
+    })
   
     // 这里应该加锁
     socket.on('join', (room)=>{
