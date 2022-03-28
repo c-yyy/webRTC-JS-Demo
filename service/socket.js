@@ -14,7 +14,8 @@ const socketServer = (app) => {
   // http.listen(3479, '0.0.0.0')
   console.log('\x1b[32m', `----  http://192.168.1.111:${3479}  ----`)
 
-  let lawyerList = [{ lawyer: '张律师', uuid: '1234-4567'}, { lawyer: '刘律师', uuid: '8765-4321'}]
+  // let lawyerList = [{ lawyer: '张律师', uuid: '1234-4567'}, { lawyer: '刘律师', uuid: '8765-4321'}]
+  var lawyerList = []
 
   io.sockets.on('connection', socket => {
     const USERCOUNT = 3;
@@ -23,7 +24,6 @@ const socketServer = (app) => {
     })
 
     socket.on('message', (room, data)=>{
-      console.log('message', room, data)
       socket.to(room).emit('message',room, data);
       io.emit('message',room, data);
     });
@@ -32,10 +32,16 @@ const socketServer = (app) => {
       const { status, lawyer, uuid } = data
       switch (status) {
         case 'free':
-          lawyerList = lawyerList.findIndex(lawyer => lawyer.uuid === uuid) === -1 && lawyerList.push({ lawyer, uuid })
+          lawyerList.findIndex(lawyer => lawyer.uuid === uuid) === -1 && lawyerList.push({ lawyer, uuid })
+          console.log(lawyerList, 'free')
           break;
         case 'busy':
           lawyerList.splice(lawyerList.findIndex(lawyer => lawyer.uuid === uuid), 1)
+          console.log(lawyerList, 'busy')
+          break;
+        case 'offline':
+          lawyerList.splice(lawyerList.findIndex(lawyer => lawyer.uuid === uuid), 1)
+          console.log(lawyerList, 'offline')
           break;
       }
     })
