@@ -1,36 +1,44 @@
 'use strict'
-// const URL = 'http://192.168.1.111:3479'
-const URL = 'http://192.168.1.111:8779'
+const PORT = 3479
+const URL = `http://127.0.0.1:${PORT}`
 const socket = io(URL, {
   autoConnect: false,
   reconnectionDelayMax: 10000,
   auth: {
-    token: '2021'
+    token: '2022'
   },
   query: {
-    'my-key2': 'my-value2'
+    'my-query': 'my-value'
   }
 })
 socket.onAny((event, ...args) => {
-  inputLog(`[ ${event} ] ${args.toString().replace(',', ' : ')}`, '#AC40FF')
+  inputLog(`【${event}】${args.toString().replace(',', ' : ')}`, '#AC40FF')
 })
 
-// 视频流配置
+/**
+ * 视频流配置
+ * 结合场景权衡利弊
+ * 带宽受限情况下，思考视频内容是优先保证帧率还是分辨率
+ * 1.如果是通话，优先保证帧率
+ * 2.如果是屏幕共享，优先分辨率
+ */
 const mediaStreamQuery = {
   video: {
-    facingMode: "user",
+    // deviceId: '',
+    facingMode: "user", // environment 后置
+    frameRate: { ideal: 10, max: 15 },
     width: {
-      min: 600,
-      ideal: 1080,
+      min: 320,
+      ideal: 1280,
       max: 1920
     },
     height: {
-      min: 400,
+      min: 240,
       ideal: 720,
       max: 1080
     }
   },
-  audio: false
+  audio: true
 }
 const configuration = {
   iceServers: [
@@ -64,11 +72,29 @@ let localPeerConnection, remotePeerConnection
 // 连接远程
 const p2pConnection = async () => {
   try {
+    // 清除未销毁的媒体流
+    if (window.stream) {
+      window.stream.getTracks().forEach(track => {
+        track.stop()
+      })
+    }
+    // getDisplayMedia 分享屏幕
     const mediaStream = await navigator.mediaDevices.getUserMedia(mediaStreamQuery)
     localVideo.srcObject = mediaStream
     localMediaStream = mediaStream
 
-    localPeerConnection = new RTCPeerConnection(configuration)
+    /**
+     * 各个浏览器尽量兼容 PeerConnection
+     * addIceCandidate()： 保存 ICE 候选信息，即双方协商信息，持续整个建立通信过程，直到没有更多候选信息
+     * addTrack() ：添加音频或者视频轨道
+     * createAnswer() ：创建应答信令
+     * createDataChannel()： 创建消息通道，建立WebRTC通信之后，就可以 p2p 的直接发送文本消息，无需中转服务器
+     * createOffer()： 创建初始信令
+     * setRemoteDescription()： 保存远端发送给自己的信令
+     * setLocalDescription() ：保存自己端创建的信令
+     */
+    const PeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection
+    localPeerConnection = new PeerConnection(configuration)
 
     localPeerConnection.addEventListener('icecandidate', e => onIceCandidate(localPeerConnection, e))
     localPeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(localPeerConnection, e))
@@ -79,18 +105,18 @@ const p2pConnection = async () => {
       inputLog('localPeerConnection createOffer start')
       const offer = await localPeerConnection.createOffer(offerOptions)
       localPeerConnection.setLocalDescription(offer)
-      socket.emit('message', 2021, offer);
+      socket.emit('msg', 2022, offer);
     } catch (error) {
       inputLog(`请先接通本地视频 Failed to create session description: ${error.toString()}`, '#F56C6C')
     }
 
-    if (!sign) {
-      // 本地测试
-      // window.open('http://127.0.0.1:3478/?clinet=2021')
-      // setTimeout(() => {
-      //   socket.emit('join', 2021)
-      // }, 1e3);
-    }
+    // if (!sign) {
+    //   // 本地测试
+    //   window.open('http://127.0.0.1:3478/?clinet=2022')
+    //   setTimeout(() => {
+    //     socket.emit('join', 2022)
+    //   }, 1e3);
+    // }
     inputLog('navigator.mediaDevices.getUserMedia success ~', '#67C23A')
   } catch (error) {
     // 错误日志
@@ -127,7 +153,7 @@ const p2pConnection = async () => {
       remotePeerConnection.addEventListener('icecandidate', e => onIceCandidate(remotePeerConnection, e))
       remotePeerConnection.addEventListener('iceconnectionstatechange', e => onIceStateChange(remotePeerConnection, e))
       
-      // remotePeerConnection.addEventListener('onaddstream', gotRemoteStream)
+      remotePeerConnection.addEventListener('onaddstream', gotRemoteStream)
       remotePeerConnection.addEventListener('track', gotRemoteStream)
       inputLog('Added local stream to localPeerConnection')
   
@@ -143,7 +169,7 @@ const p2pConnection = async () => {
     }
   })
 
-  await socket.on('message', async (roomid, data) => {
+  await socket.on('msg', async (roomid, data) => {
 		console.log('receive message!', roomid, data);
 
 		if (data === null || data === undefined){
@@ -158,7 +184,7 @@ const p2pConnection = async () => {
       const answer = await remotePeerConnection.createAnswer()
       remotePeerConnection.setLocalDescription(answer)
 
-			socket.emit('message', 2021, answer);
+			socket.emit('msg', 2022, answer);
 
 		} else if (data.hasOwnProperty('type') && data.type == 'answer'){
       console.log('answer', data)
@@ -188,24 +214,24 @@ const init = async () => {
 
   inputLog('init success ~', '#67C23A')
 
-  socket.emit('hi', 'hi 123')
+  socket.emit('msg', 'socket success ~')
 
-  inputLog('hi success ~', '#67C23A')
+  inputLog('socket success ~', '#67C23A')
 
   window.addEventListener('error', e => {
     const error = e.error
     inputLog(error.toString(), '#F56C6C')
   })
   // 区分客户端
-  // if (isClinet && !sign) {
-  //   sign = confirm('隔壁请求与你视频')
-  //   console.log(sign)
-  //   if (sign) {
-  //     inputLog(`连接房间，开始视频`)        
-  //     p2pConnection()
-  //     socket.emit('join', 2021)
-  //   }
-  // }
+  if (isClinet && !sign) {
+    sign = confirm('隔壁请求与你视频')
+    console.log(sign)
+    if (sign) {
+      inputLog(`连接房间，开始视频`)        
+      p2pConnection()
+      socket.emit('join', 2022)
+    }
+  }
 }
 
 init()
@@ -221,7 +247,7 @@ const hangUp = () => {
   localPeerConnection = null
   remotePeerConnection = null
   setTimeout(() => {
-    socket.emit('leave', 2021)
+    socket.emit('leave', 2022)
     socket.disconnect()
     clearInterval(timer)
   }, 0)
@@ -253,7 +279,7 @@ async function onIceCandidate(pc, event) {
       await getOtherPc(pc).addIceCandidate(event.candidate)
       inputLog(`${getPcName(pc)} addIceCandidate success`, '#67C23A')
 
-      socket.emit('message', 2021, {
+      socket.emit('msg', 2022, {
         type: 'candidate',
         label:event.candidate.sdpMLineIndex, 
         id:event.candidate.sdpMid, 
@@ -280,7 +306,7 @@ async function onCreateAnswerSuccess(desc) {
     await remotePeerConnection.setLocalDescription(desc)
     inputLog(`${getPcName(remotePeerConnection)} setLocalDescription complete`, '#67C23A')
 
-    socket.emit('message', 2021, desc);
+    socket.emit('msg', 2022, desc);
   } catch (error) {
     inputLog(`Failed to set session description: ${error.toString()}`, '#F56C6C')
   }
@@ -300,7 +326,7 @@ async function onCreateOfferSuccess(desc) {
     await localPeerConnection.setLocalDescription(desc)
     inputLog(`${getPcName(localPeerConnection)} setLocalDescription complete`, '#67C23A')
 
-    socket.emit('message', 2021, desc);
+    socket.emit('msg', 2022, desc);
   } catch (error) {
     inputLog(`请先接通本地视频 Failed to set session description: ${error.toString()}`, '#F56C6C')
   }

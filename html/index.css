@@ -4,9 +4,12 @@ body {
   justify-content: center;
   align-items: center;
 }
-#localVideo {
-  max-width: 30vw;
+#localVideo, #remoteVideo {
   background: #303133;
+  transform: rotateY(180deg);
+}
+#localVideo {
+  max-width: 80vw;
   border-radius: 5px;
   /* filter: blur(4px) invert(1) opacity(1); */
   /* filter: hue-rotate(180deg) saturate(200%); */
@@ -15,7 +18,8 @@ body {
   position: absolute;
   top: 0;
   right: 0;
-  width: 30%;
+  width: 35%;
+  height: 40%;
 }
 .section-1 {
   position: relative;

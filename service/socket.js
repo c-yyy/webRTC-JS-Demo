@@ -12,7 +12,7 @@ const socketServer = (app) => {
   })
   http.listen(3479)
   // http.listen(3479, '0.0.0.0')
-  console.log('\x1b[32m', `----  http://192.168.1.111:${3479}  ----`)
+  console.log('\x1b[32m', `----  http://127.0.0.1:${3479}  ----`)
 
   // let lawyerList = [{ lawyer: '张律师', uuid: '1234-4567'}, { lawyer: '刘律师', uuid: '8765-4321'}]
   var lawyerList = []
